@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
-VERSION=0.3
+
+VERSION=0.3.1
 VIDS_MENU="${VIDS_DEFAULT_MENU:-}"                # Default Menu
 VIDS_PLTFRM="${VIDS_DEFAULT_PLATFORM:-youtube}"   # Default Platform
 VIDS_PLAYER="${VIDS_DEFAULT_PLAYER:-mpv}"         # Default Player
@@ -78,8 +79,8 @@ _choose(){
                 ;;
         "fzf")
                 video_url=$(printf '%s' "${vids_listvdata}" |\
-                            fzf -i -e --with-nth='1..-2' --multi --cycle --bind=ctrl-t:toggle-all --header='Select Videos:' --reverse\
-                                --bind "ctrl-c:execute-silent(awk '{print \$NF}' {+f} | xclip -selection clipboard && notify-send 'copyed!!')" |\
+                            fzf -i -e --with-nth='1..-2' --multi --cycle --bind=ctrl-t:toggle-all --prompt='> '\
+                                --bind "ctrl-y:execute-silent(awk '{print \$NF}' {+f} | $XCOPY)+abort" |\
                             awk '{print $NF}'\
                             )
                 ;;
@@ -336,7 +337,7 @@ case "${VIDS_PLTFRM}" in
              ;;
 esac
 
-printf '%s' "${VIDSBRND} - Search query: "
+# printf '%s' "${VIDSBRND} - Search query: "
 
 if [ -z "$query" ] || [ -n "$1" ]; then
     if [ -z "$1" ]; then
@@ -349,7 +350,7 @@ fi
 # If no query was passed, exit
 [ -z "${query}" ] && exit 0
 
-echo "${query}"
+# echo "${query}"
 
 # shellcheck disable=SC2086
 vids_jsondata=$(curl -X ${VIDSMTHD} "${VIDSURL}" -s \
@@ -373,7 +374,7 @@ vids_listvdata=$(printf '%s' "${vids_jsonvdata}" \
                     date = substr(gensub(/\s+> (.*)/, "\\1", "g", $4),0)
                     videoURL = substr(gensub(/\s+> (.*)/, "\\1", "g", $5),0)
                     print channel "\t| " title "\t| " duration "\t| " date "\t" videoURL
-                  }' | column -t -s $'\t' \
+                  }' | tr -d '‎' | tr -d '‍' | column -t -s $'\t' \
                 )
 
 while :; do

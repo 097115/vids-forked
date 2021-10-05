@@ -1,3 +1,15 @@
+# About
+
+This is a fork of [`vids` script](https://github.com/MyOS-ArchLinux/vids) with some minor modifications.
+
+<!--   - `<Ctrl-y>` now copies the path of the selected vid to the clipboard and exits the script -->
+<!--   - the script is a bit more silent now -->
+<!--   - the sript now checks titles for for some non-regular symbols and removes them -->
+
+All the credits go to the author, the original README follows:
+
+<hr>
+
 # vids
 
 A POSIX script that helps you search videos platforms ([YouTube](https://www.youtube.com) , [PeerTube](https://sepiasearch.org) , [BitChute](https://www.bitchute.com), [LBRY](https://odysee.com) and [TED Talks](https://ted2srt.org/api/search)) with command line easily.
