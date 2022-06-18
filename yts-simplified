@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# set
+opts=$1 && [ -z $opts ] && opts=help
+VIDSMTHD="GET"
+VIDSPRMT="-G --data-urlencode"
+VIDSURL="https://www.youtube.com/results?sp=EgIQAQ%253D%253D"
+VIDSPRMT1="search_query"
+VIDSPRMT2="pbj=1"
+VIDSHDR1="x-youtube-client-name:1"
+VIDSHDR2="x-youtube-client-version:2.20200214.04.00"
+VIDSJSN1=".[1].response"
+VIDSJSN2='[ .contents|..|.videoRenderer? | select(. !=null) | { title: .title.runs[0].text, channel: .longBylineText.runs[0].text, duration:"\(.lengthText.simpleText // "Livestream")", views: "\(.shortViewCountText.simpleText // "\(.shortViewCountText.runs[0].text) watching")", date: "\(.publishedTimeText.simpleText // "Right now")", videoURL: "https://youtu.be/\(.videoId)", }]'
+case $opts in
+    help)
+        echo "USAGE:"
+        echo "      $0 [peertube] query"
+        exit
+        ;;
+    peertube)
+        VIDS_PEERTUBE_URL=https://sepiasearch.org   # https://instances.joinpeertube.org/
+        VIDSMTHD="GET"
+        VIDSPRMT="-G --data-urlencode"
+        VIDSURL="${VIDS_PEERTUBE_URL}/api/v1/search/videos"
+        VIDSPRMT1="search"
+        VIDSPRMT2="count=40"
+        VIDSHDR1=""
+        VIDSHDR2=""
+        VIDSJSN1=".data"
+        VIDSJSN2='[ .[] |{ title: .name, channel: .channel.displayName,duration:"\(if .duration == 0 then "Livestream" elif .duration <= 3600 then "\(.duration|strftime("%M:%S"))" else "\(.duration|strftime("%H:%M:%S"))" end)", views: "\(.views) views", date: .publishedAt| sub("(?<time>.*)\\.[\\d]{3}(?<tz>.*)"; "\(.time)\(.tz)")|strptime("%Y-%m-%dT%H:%M:%SZ")|strftime("%Y-%m-%d"), videoURL: .url, }]'
+        shift
+        ;;
+    youtube)
+        shift
+        ;;
+esac
+query=$@
+
+# query
+vids_jsondata=$(curl -X ${VIDSMTHD} "${VIDSURL}" -s \
+    ${VIDSPRMT} "${VIDSPRMT1}=${query}" \
+    ${VIDSPRMT} "${VIDSPRMT2}" \
+    -H "${VIDSHDR1}" -H "${VIDSHDR2}" \
+    -H "user-agent:Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0" \
+    -H "accept-language:en-US, en;q=0.9" \
+    -H "accept-encoding:gzip" --compressed \
+)
+
+# parse
+vids_jsondata_clean=$(printf '%s' "${vids_jsondata}" | jq -r "${VIDSJSN1}" | jq -r "${VIDSJSN2}")
+the_vid=$(echo ${vids_jsondata_clean} | jq -r '(.[] | [.title, .duration, .videoURL]) | @tsv' | column -ts $'\t' | fzf)
+
+# open
+if ! [ -z "$the_vid" ]
+then
+    mpv $(echo $the_vid | awk '{print $NF}')
+fi
